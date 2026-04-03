@@ -301,7 +301,165 @@ const TABS = [
   { id: 'savings', label: '🏦 적금' },
   { id: 'loan', label: '🏠 대출 이자' },
   { id: 'emergency', label: '🛡️ 비상금' },
+  { id: 'deposit', label: '📈 주식 예탁금' },
+  { id: 'court', label: '⚖️ 법원 공탁금' },
 ];
+// ────────────────────────────────
+// 6. 주식 예탁금 이용료 계산기
+// ────────────────────────────────
+function DepositCalculator() {
+  const [amount, setAmount] = useState('');
+  const [rate, setRate] = useState('2.1');
+  const [days, setDays] = useState('365');
+
+  const calc = () => {
+    const a = parseFloat(amount.replace(/,/g, '')) * 10000;
+    const r = parseFloat(rate) / 100;
+    const d = parseInt(days);
+    if (!a || !r || !d) return null;
+    const interest = a * r * (d / 365);
+    const tax = interest * 0.154;
+    const final = interest - tax;
+    return { interest, tax, final };
+  };
+
+  const result = calc();
+
+  return (
+    <div className="calculator-card">
+      <h2>📈 주식 예탁금 이용료 계산기</h2>
+      <p className="desc">증권사에 맡긴 예탁금에 대한 이용료(이자)를 계산해드려요. 증권사마다 금리가 다르니 확인 후 입력하세요.</p>
+      <div className="input-group">
+        <label>예탁금 (만원)</label>
+        <input
+          type="text"
+          placeholder="예: 1000"
+          value={amount}
+          onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
+        />
+      </div>
+      <div className="input-group">
+        <label>연 이용료율 (%)</label>
+        <input
+          type="text"
+          placeholder="예: 2.1"
+          value={rate}
+          onChange={e => setRate(e.target.value)}
+        />
+      </div>
+      <div className="input-group">
+        <label>예탁 기간 (일)</label>
+        <select value={days} onChange={e => setDays(e.target.value)}>
+          <option value="30">1개월 (30일)</option>
+          <option value="90">3개월 (90일)</option>
+          <option value="180">6개월 (180일)</option>
+          <option value="365">1년 (365일)</option>
+        </select>
+      </div>
+      {result && (
+        <>
+          <div className="result-box">
+            <div className="result-label">세후 이용료 수령액</div>
+            <div className="result-value">{fmt(result.final)}원</div>
+          </div>
+          <div className="result-detail">
+            <div className="detail-row"><span>세전 이용료</span><span>{fmt(result.interest)}원</span></div>
+            <div className="detail-row"><span>이자소득세 (15.4%)</span><span>-{fmt(result.tax)}원</span></div>
+            <div className="detail-row"><span>세후 수령액</span><span>{fmt(result.final)}원</span></div>
+          </div>
+          <div className="result-detail" style={{marginTop:12, background:'#fffbeb', border:'1px solid #f6e05e'}}>
+            <p style={{fontSize:'0.82rem', color:'#744210'}}>
+              💡 주요 증권사 예탁금 이용료율: 키움 2.0%, 미래에셋 2.1%, 삼성증권 2.0%, NH투자 1.8% (변동될 수 있으니 각 증권사 확인 필요)
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────
+// 7. 법원 공탁금 이자 계산기
+// ────────────────────────────────
+function CourtCalculator() {
+  const [amount, setAmount] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [type, setType] = useState('deposit');
+
+  const RATES = {
+    deposit: { rate: 2.5, label: '전세보증금 공탁 (연 2.5%)' },
+    execution: { rate: 5.0, label: '집행공탁 (연 5.0%)' },
+    guarantee: { rate: 1.0, label: '보증공탁 (연 1.0%)' },
+  };
+
+  const calc = () => {
+    const a = parseFloat(amount.replace(/,/g, '')) * 10000;
+    if (!a || !startDate || !endDate) return null;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const days = (end - start) / (1000 * 60 * 60 * 24);
+    if (days <= 0) return null;
+    const r = RATES[type].rate / 100;
+    const interest = a * r * (days / 365);
+    const tax = interest * 0.154;
+    return { days: Math.floor(days), interest, tax, final: interest - tax, total: a + interest - tax };
+  };
+
+  const result = calc();
+
+  return (
+    <div className="calculator-card">
+      <h2>⚖️ 법원 공탁금 이자 계산기</h2>
+      <p className="desc">전세보증금, 집행공탁 등 법원에 맡긴 공탁금의 이자를 계산해드려요.</p>
+      <div className="input-group">
+        <label>공탁금 (만원)</label>
+        <input
+          type="text"
+          placeholder="예: 10000"
+          value={amount}
+          onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
+        />
+      </div>
+      <div className="input-group">
+        <label>공탁 종류</label>
+        <select value={type} onChange={e => setType(e.target.value)}>
+          {Object.entries(RATES).map(([key, val]) => (
+            <option key={key} value={key}>{val.label}</option>
+          ))}
+        </select>
+      </div>
+      <div className="input-group">
+        <label>공탁 시작일</label>
+        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+      </div>
+      <div className="input-group">
+        <label>공탁 종료일</label>
+        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+      </div>
+      {result && (
+        <>
+          <div className="result-box">
+            <div className="result-label">세후 이자</div>
+            <div className="result-value">{fmt(result.final)}원</div>
+            <div className="result-sub">공탁금 + 이자 총액: {fmt(result.total)}원</div>
+          </div>
+          <div className="result-detail">
+            <div className="detail-row"><span>공탁 기간</span><span>{result.days}일</span></div>
+            <div className="detail-row"><span>세전 이자</span><span>{fmt(result.interest)}원</span></div>
+            <div className="detail-row"><span>이자소득세 (15.4%)</span><span>-{fmt(result.tax)}원</span></div>
+            <div className="detail-row"><span>세후 이자</span><span>{fmt(result.final)}원</span></div>
+          </div>
+          <div className="result-detail" style={{marginTop:12, background:'#fff5f5', border:'1px solid #feb2b2'}}>
+            <p style={{fontSize:'0.82rem', color:'#742a2a'}}>
+              ⚠️ 본 계산 결과는 참고용이며 실제 법원 공탁금 이자와 다를 수 있습니다. 정확한 금액은 법원에 문의하세요.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('salary');
@@ -332,6 +490,8 @@ if (page === 'privacy') return <Privacy />;
       {activeTab === 'savings' && <SavingsCalculator />}
       {activeTab === 'loan' && <LoanCalculator />}
       {activeTab === 'emergency' && <EmergencyCalculator />}
+      {activeTab === 'deposit' && <DepositCalculator />}
+      {activeTab === 'court' && <CourtCalculator />}
 
       <div className="ad-placeholder">
         📢 광고 영역 (Google AdSense 연동 시 여기에 광고가 표시됩니다)
