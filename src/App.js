@@ -349,12 +349,12 @@ function DepositCalculator() {
       </div>
       <div className="input-group">
         <label>예탁 기간 (일)</label>
-        <select value={days} onChange={e => setDays(e.target.value)}>
-          <option value="30">1개월 (30일)</option>
-          <option value="90">3개월 (90일)</option>
-          <option value="180">6개월 (180일)</option>
-          <option value="365">1년 (365일)</option>
-        </select>
+        <input
+          type="text"
+          placeholder="예: 30 (직접 입력)"
+          value={days}
+          onChange={e => setDays(e.target.value.replace(/[^0-9]/g, ''))}
+        />
       </div>
       {result && (
         <>
